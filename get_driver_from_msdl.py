@@ -4,12 +4,14 @@ import pefile
 import requests
 
 class driver():
-    def __init__(self, driver):
+    def __init__(self, driver, sign = ''):
         self.driver = driver
         self.pe = None
-        self.sign = ''
-        self.url = 'https://msdl.microsoft.com/download/symbols/dxgkrnl.sys/%s/dxgkrnl.sys'
+        self.sign = sign
         path_prefix = 'C:/Windows/System32/drivers/'
+        self.url = 'https://msdl.microsoft.com/download/symbols/dxgkrnl.sys/%s/dxgkrnl.sys'
+        if sign != '':
+            return
         try:
             self.pe = pefile.PE(path_prefix + self.driver, fast_load=True)
         except FileNotFoundError:
@@ -31,10 +33,16 @@ class driver():
         elif file.status_code == 404:
             print('download failed')
 
-def main():
+def get_sign_from_driver():
     sys = driver('dxgkrnl.sys')
     sys.parse_sign()
+    print(sys.sign)
+
+def get_driver_from_sign():
+    sys = driver('dxgkrnl.sys', 'BA1FF716371000')
     sys.download()
 
 if __name__ == '__main__':
-    main()
+    get_sign_from_driver()
+
+    get_driver_from_sign()
