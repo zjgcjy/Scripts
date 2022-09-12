@@ -1,6 +1,6 @@
-# Useful Scripts
+# Useful Scripts on Windows
 - check os architecture
-- get windows driver from msdl
-- get Windows pdb file from msdl
+- get windows driver via sign from msdl
+- get driver's pdb file from msdl
 - parser new struct named dvrt in PE 
-- fire system redirection for wow64 process
+- file system redirection trick for wow64 process

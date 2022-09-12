@@ -5,12 +5,11 @@ import ctypes
 import pefile
 
 class dvrt():
-    def __init__(self, driver):
+    def __init__(self, driver, path_prefix = 'C:/Windows/System32/drivers/'):
         self.driver_name = driver
         self.pe = None
         self.ptr = 0
         self.rva_list = []
-        path_prefix = 'C:/Windows/System32/drivers/'
         try:
             self.pe = pefile.PE(path_prefix + self.driver_name, fast_load=True)
         except FileNotFoundError:
@@ -63,6 +62,7 @@ class dvrt():
         return VirtualAddress
 
     def parse_dvrt(self):
+        print('ptr: %08x'%self.ptr)
         Symbol = self.read_qword()
         BaseRelocSize = self.read_dword()
         print('Symbol: 0x%04x, BaseRelocSize: 0x%08x' % (Symbol, BaseRelocSize))
@@ -91,7 +91,7 @@ class dvrt():
                     exit()
 
 def main():
-    obj = dvrt('dxgkrnl.sys')
+    obj = dvrt('dxgkrnl.sys', './')
 
 if __name__ == '__main__':
     main()

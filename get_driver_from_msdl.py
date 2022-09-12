@@ -2,6 +2,7 @@
 __author__ = "zjgcjy"
 import pefile
 import requests
+import sys
 
 class driver():
     def __init__(self, driver, sign = ''):
@@ -9,23 +10,23 @@ class driver():
         self.pe = None
         self.sign = sign
         path_prefix = 'C:/Windows/System32/drivers/'
-        self.url = 'https://msdl.microsoft.com/download/symbols/dxgkrnl.sys/%s/dxgkrnl.sys'
+        self.url = 'https://msdl.microsoft.com/download/symbols'
         if sign != '':
             return
         try:
             self.pe = pefile.PE(path_prefix + self.driver, fast_load=True)
         except FileNotFoundError:
-            exit()
+            sys.exit()
         self.pe.parse_data_directories()
 
     def parse_sign(self):
-        timestamp = self.pe.FILE_HEADER.TimeDateStamp
-        imagesize = self.pe.OPTIONAL_HEADER.SizeOfImage
-        self.sign = hex(timestamp)[2:].upper().rjust(8, '0') + hex(imagesize)[2:].upper()
+        timestamp = f'{self.pe.FILE_HEADER.TimeDateStamp:08x}'
+        imagesize = f'{self.pe.OPTIONAL_HEADER.SizeOfImage:x}'
+        self.sign = timestamp + imagesize
 
     def download(self):
-        url = self.url % self.sign
-        file = requests.get(url, timeout=60)
+        self.url = f'{self.url}/{self.driver}/{self.sign}/{self.driver}'
+        file = requests.get(self.url, timeout=60)
         if file.status_code == 200:
             with open(self.driver, 'wb') as f:
                 f.write(file.content)
@@ -39,7 +40,7 @@ def get_sign_from_driver():
     print(sys.sign)
 
 def get_driver_from_sign():
-    sys = driver('dxgkrnl.sys', 'BA1FF716371000')
+    sys = driver('dxgkrnl.sys', 'EDC1425F479000')
     sys.download()
 
 if __name__ == '__main__':
