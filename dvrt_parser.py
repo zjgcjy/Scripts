@@ -48,7 +48,7 @@ class dvrt():
     p64 = lambda self: self.pe.get_qword_from_offset(self.ptr)
 
     def read_word(self):
-        temp = self.p16(f)
+        temp = self.p16()
         self.ptr += 2
         return temp
 
@@ -72,6 +72,39 @@ class dvrt():
         self.ptr += SizeOfBlock - 8
         return VirtualAddress
 
+    def parser_function_override(self):
+        FuncOverrideSize = self.read_dword()
+        #print(f'FuncOverrideSize: 0x{FuncOverrideSize:08x}')
+        OriginalRva = self.read_dword()
+        BDDOffset = self.read_dword()
+        RvaSize = self.read_dword()
+        BaseRelocSize = self.read_dword()
+        #print(f'OriginalRva: 0x{OriginalRva:08x}, BDDOffset: 0x{BDDOffset:08x}, RvaSize: 0x{RvaSize:08x}, BaseRelocSize: 0x{BaseRelocSize:08x}')
+        RVAs = []
+        for i in range(RvaSize // 4):
+            RVAs.append(self.read_dword())
+        #[print(f'RVAs[{i}]: 0x{rva:08x}') for i, rva in enumerate(RVAs)]
+        fun_stop = self.ptr + BaseRelocSize
+        while self.ptr < fun_stop:
+            VirtualAddress = self.read_dword()
+            SizeOfBlock = self.read_dword()
+            for i in range((SizeOfBlock - 8) // 2):
+                item = self.read_word()
+                if item == 0x0000:
+                    continue
+                va = VirtualAddress + (item & 0xfff)
+                #print(f'va: 0x{va:08x}')
+                self.rva_list.append((va, 2))
+        # BDD
+        BDDVersion = self.read_dword()
+        BDDSize = self.read_dword()
+        #print(f'BDDVersion: 0x{BDDVersion:08x}, BDDSize: 0x{BDDSize:08x}')
+        for i in range(BDDSize // 8):
+            Left = self.read_word()
+            Right = self.read_word()
+            Value = self.read_dword()
+            #print(f'Left: 0x{Left:04x}, Right: 0x{Right:04x}, Value: 0x{Value:08x}')
+
     def parse_dvrt(self):
         Symbol = self.read_qword()
         BaseRelocSize = self.read_dword()
@@ -79,11 +112,11 @@ class dvrt():
         stop = self.ptr + BaseRelocSize
         # TODO: win11 ntoskrnl!RtlPerformRetpolineRelocationsOnImageEx
         if Symbol == IMAGE_DYNAMIC_RELOCATION_FUNCTION_OVERRIDE:
-            self.ptr = stop
+            self.parser_function_override()
             return
         while self.ptr < stop:
             VirtualAddress = self.read_dword()
-            # print(f'VirtualAddress: 0x{VirtualAddress:08x})
+            # print(f'VirtualAddress: 0x{VirtualAddress:08x}')
             SizeOfBlock = self.read_dword()
             # print(f'SizeOfBlock: 0x{SizeOfBlock:08x})
             for i in range((SizeOfBlock - 8) // 4):
@@ -109,7 +142,7 @@ class dvrt():
                     sys.exit()
 
 def main():
-    obj = dvrt('dxgkrnl.sys', './')
+    obj = dvrt('dxgkrnl_win11.sys', './')
 
 if __name__ == '__main__':
     main()

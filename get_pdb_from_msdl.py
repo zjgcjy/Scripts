@@ -27,7 +27,7 @@ class driver():
                 guid += f'{int.from_bytes(debug_entry.Signature_Data4, byteorder="big"):016x}'
                 guid = guid.upper()
                 self.url = f'{self.url}/{pdb_file}/{guid}{debug_entry.Age:x}/{pdb_file}'
-                #print(url)
+                print(self.url)
 
     def download(self):
         file = requests.get(self.url, timeout=60)
