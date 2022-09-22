@@ -1,6 +1,8 @@
-#coding:utf-8
+# coding:utf-8
 __author__ = "zjgcjy"
+
 import ctypes
+
 
 class SYSTEM_INFO(ctypes.Structure):
     _fields_ = [
@@ -17,8 +19,10 @@ class SYSTEM_INFO(ctypes.Structure):
         ('wProcessorRevision', ctypes.c_uint16),
     ]
 
+
 PROCESSOR_ARCHITECTURE_INTEL = 0
 PROCESSOR_ARCHITECTURE_AMD64 = 9
+
 
 def IsSystem32():
     GetNativeSystemInfo = ctypes.windll.kernel32.GetNativeSystemInfo
@@ -33,11 +37,13 @@ def IsSystem32():
     else:
         return False
 
+
 def main():
     if IsSystem32():
         print('os: i386')
     else:
         print('os: amd64')
+
 
 if __name__ == '__main__':
     main()

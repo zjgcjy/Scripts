@@ -1,11 +1,14 @@
-#coding:utf-8
+# coding:utf-8
 __author__ = "zjgcjy"
+
+import argparse
 import pefile
 import requests
 import sys
 
+
 class driver():
-    def __init__(self, driver, sign = ''):
+    def __init__(self, driver, sign=''):
         self.driver = driver
         self.pe = None
         self.sign = sign
@@ -19,13 +22,9 @@ class driver():
             sys.exit()
         self.pe.parse_data_directories()
 
-    def parse_sign(self):
-        timestamp = f'{self.pe.FILE_HEADER.TimeDateStamp:08x}'
-        imagesize = f'{self.pe.OPTIONAL_HEADER.SizeOfImage:x}'
-        self.sign = timestamp + imagesize
-
     def download(self):
         self.url = f'{self.url}/{self.driver}/{self.sign}/{self.driver}'
+        print(f'download from {self.url}')
         file = requests.get(self.url, timeout=60)
         if file.status_code == 200:
             with open(self.driver, 'wb') as f:
@@ -34,16 +33,17 @@ class driver():
         elif file.status_code == 404:
             print('download failed')
 
-def get_sign_from_driver():
-    sys = driver('dxgkrnl.sys')
-    sys.parse_sign()
-    print(sys.sign)
 
 def get_driver_from_sign():
-    sys = driver('dxgkrnl.sys', 'EDC1425F479000')
+    parser = argparse.ArgumentParser(description='Download driver from Microsoft server')
+    parser.add_argument('driver', type=str, help='driver name')
+    parser.add_argument('sign', type=str, help='driver signature')
+    parser.add_argument('--path', type=str, default='./', help='driver path')
+
+    args = parser.parse_args()
+    sys = driver(args.driver, args.sign)
     sys.download()
 
-if __name__ == '__main__':
-    get_sign_from_driver()
 
+if __name__ == '__main__':
     get_driver_from_sign()

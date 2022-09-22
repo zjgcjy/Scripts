@@ -1,23 +1,24 @@
-#coding:utf-8
+# coding:utf-8
 __author__ = "zjgcjy"
-import binascii
-import ctypes
+
+import argparse
 import pefile
 import sys
 
 # see ntimage.h 22621
-IMAGE_DYNAMIC_RELOCATION_GUARD_RF_PROLOGUE             = 0x00000001
-IMAGE_DYNAMIC_RELOCATION_GUARD_RF_EPILOGUE             = 0x00000002
+IMAGE_DYNAMIC_RELOCATION_GUARD_RF_PROLOGUE = 0x00000001
+IMAGE_DYNAMIC_RELOCATION_GUARD_RF_EPILOGUE = 0x00000002
 IMAGE_DYNAMIC_RELOCATION_GUARD_IMPORT_CONTROL_TRANSFER = 0x00000003
-IMAGE_DYNAMIC_RELOCATION_GUARD_INDIR_CONTROL_TRANSFER  = 0x00000004
-IMAGE_DYNAMIC_RELOCATION_GUARD_SWITCHTABLE_BRANCH      = 0x00000005
-IMAGE_DYNAMIC_RELOCATION_ARM64X                        = 0x00000006
-IMAGE_DYNAMIC_RELOCATION_FUNCTION_OVERRIDE             = 0x00000007
-IMAGE_DYNAMIC_RELOCATION_MM_SHARED_USER_DATA_VA        = 0x7FFE0000
-#IMAGE_DYNAMIC_RELOCATION_KI_USER_SHARED_DATA64        = 0xFFFFF78000000000UI64
+IMAGE_DYNAMIC_RELOCATION_GUARD_INDIR_CONTROL_TRANSFER = 0x00000004
+IMAGE_DYNAMIC_RELOCATION_GUARD_SWITCHTABLE_BRANCH = 0x00000005
+IMAGE_DYNAMIC_RELOCATION_ARM64X = 0x00000006
+IMAGE_DYNAMIC_RELOCATION_FUNCTION_OVERRIDE = 0x00000007
+IMAGE_DYNAMIC_RELOCATION_MM_SHARED_USER_DATA_VA = 0x7FFE0000
+IMAGE_DYNAMIC_RELOCATION_KI_USER_SHARED_DATA64 = 0xFFFFF78000000000
+
 
 class dvrt():
-    def __init__(self, driver, path_prefix = 'C:/Windows/System32/drivers/'):
+    def __init__(self, driver, path_prefix='C:/Windows/System32/drivers/'):
         self.driver_name = driver
         self.pe = None
         self.ptr = 0
@@ -25,7 +26,8 @@ class dvrt():
         try:
             self.pe = pefile.PE(path_prefix + self.driver_name, fast_load=True)
         except FileNotFoundError:
-            exit()
+            print('Driver Not Found')
+            sys.exit(-1)
         self.pe.parse_data_directories()
         self.get_ori()
 
@@ -74,16 +76,16 @@ class dvrt():
 
     def parser_function_override(self):
         FuncOverrideSize = self.read_dword()
-        #print(f'FuncOverrideSize: 0x{FuncOverrideSize:08x}')
+        # print(f'FuncOverrideSize: 0x{FuncOverrideSize:08x}')
         OriginalRva = self.read_dword()
         BDDOffset = self.read_dword()
         RvaSize = self.read_dword()
         BaseRelocSize = self.read_dword()
-        #print(f'OriginalRva: 0x{OriginalRva:08x}, BDDOffset: 0x{BDDOffset:08x}, RvaSize: 0x{RvaSize:08x}, BaseRelocSize: 0x{BaseRelocSize:08x}')
+        # print(f'OriginalRva: 0x{OriginalRva:08x}, BDDOffset: 0x{BDDOffset:08x}, RvaSize: 0x{RvaSize:08x}, BaseRelocSize: 0x{BaseRelocSize:08x}')
         RVAs = []
         for i in range(RvaSize // 4):
             RVAs.append(self.read_dword())
-        #[print(f'RVAs[{i}]: 0x{rva:08x}') for i, rva in enumerate(RVAs)]
+        # [print(f'RVAs[{i}]: 0x{rva:08x}') for i, rva in enumerate(RVAs)]
         fun_stop = self.ptr + BaseRelocSize
         while self.ptr < fun_stop:
             VirtualAddress = self.read_dword()
@@ -93,17 +95,17 @@ class dvrt():
                 if item == 0x0000:
                     continue
                 va = VirtualAddress + (item & 0xfff)
-                #print(f'va: 0x{va:08x}')
+                # print(f'va: 0x{va:08x}')
                 self.rva_list.append((va, 2))
         # BDD
         BDDVersion = self.read_dword()
         BDDSize = self.read_dword()
-        #print(f'BDDVersion: 0x{BDDVersion:08x}, BDDSize: 0x{BDDSize:08x}')
+        # print(f'BDDVersion: 0x{BDDVersion:08x}, BDDSize: 0x{BDDSize:08x}')
         for i in range(BDDSize // 8):
             Left = self.read_word()
             Right = self.read_word()
             Value = self.read_dword()
-            #print(f'Left: 0x{Left:04x}, Right: 0x{Right:04x}, Value: 0x{Value:08x}')
+            # print(f'Left: 0x{Left:04x}, Right: 0x{Right:04x}, Value: 0x{Value:08x}')
 
     def parse_dvrt(self):
         Symbol = self.read_qword()
@@ -138,11 +140,18 @@ class dvrt():
                 elif Symbol == IMAGE_DYNAMIC_RELOCATION_FUNCTION_OVERRIDE:
                     pass
                 else:
-                    assert(1 == 0)
-                    sys.exit()
+                    assert (1 == 0)
+                    sys.exit(-1)
+
 
 def main():
-    obj = dvrt('dxgkrnl_win11.sys', './')
+    parser = argparse.ArgumentParser(description='parser DVRT in PE file')
+    parser.add_argument('driver', type=str, help='driver name')
+    parser.add_argument('--path', type=str, default='./', help='driver path')
+    args = parser.parse_args()
+
+    obj = dvrt(args.driver, args.path)
+
 
 if __name__ == '__main__':
     main()
