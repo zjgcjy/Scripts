@@ -5,3 +5,12 @@
 - parser new struct named dvrt in PE 
 - file system redirection trick for wow64 process
 - disassemble shellcode quickly
+
+## ida
+
+- python script to deal with E-language
+
+
+## Detours
+
+- Hook Windows API demo
