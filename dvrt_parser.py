@@ -27,6 +27,7 @@ class dvrt():
             self.pe = pefile.PE(path_prefix + self.driver_name, fast_load=True)
         except FileNotFoundError:
             print('Driver Not Found')
+            print(path_prefix + self.driver_name)
             sys.exit(-1)
         self.pe.parse_data_directories()
         self.get_ori()
@@ -76,20 +77,21 @@ class dvrt():
 
     def parser_function_override(self):
         FuncOverrideSize = self.read_dword()
-        # print(f'FuncOverrideSize: 0x{FuncOverrideSize:08x}')
+        print(f'FuncOverrideSize: 0x{FuncOverrideSize:08x}')
         OriginalRva = self.read_dword()
         BDDOffset = self.read_dword()
         RvaSize = self.read_dword()
         BaseRelocSize = self.read_dword()
-        # print(f'OriginalRva: 0x{OriginalRva:08x}, BDDOffset: 0x{BDDOffset:08x}, RvaSize: 0x{RvaSize:08x}, BaseRelocSize: 0x{BaseRelocSize:08x}')
+        print(f'OriginalRva: 0x{OriginalRva:08x}, BDDOffset: 0x{BDDOffset:08x}, RvaSize: 0x{RvaSize:08x}, BaseRelocSize: 0x{BaseRelocSize:08x}')
         RVAs = []
         for i in range(RvaSize // 4):
             RVAs.append(self.read_dword())
-        # [print(f'RVAs[{i}]: 0x{rva:08x}') for i, rva in enumerate(RVAs)]
+        [print(f'RVAs[{i}]: 0x{rva:08x}') for i, rva in enumerate(RVAs)]
         fun_stop = self.ptr + BaseRelocSize
         while self.ptr < fun_stop:
             VirtualAddress = self.read_dword()
             SizeOfBlock = self.read_dword()
+            #print(f"VirtualAddress: 0x{VirtualAddress:08x}, SizeOfBlock: 0x{SizeOfBlock:08x}")
             for i in range((SizeOfBlock - 8) // 2):
                 item = self.read_word()
                 if item == 0x0000:
@@ -97,15 +99,16 @@ class dvrt():
                 va = VirtualAddress + (item & 0xfff)
                 # print(f'va: 0x{va:08x}')
                 self.rva_list.append((va, 2))
+        print(f"ptr: 0x{self.ptr:08x}")
         # BDD
         BDDVersion = self.read_dword()
         BDDSize = self.read_dword()
-        # print(f'BDDVersion: 0x{BDDVersion:08x}, BDDSize: 0x{BDDSize:08x}')
+        print(f'BDDVersion: 0x{BDDVersion:08x}, BDDSize: 0x{BDDSize:08x}')
         for i in range(BDDSize // 8):
             Left = self.read_word()
             Right = self.read_word()
             Value = self.read_dword()
-            # print(f'Left: 0x{Left:04x}, Right: 0x{Right:04x}, Value: 0x{Value:08x}')
+            print(f'Left: 0x{Left:04x}, Right: 0x{Right:04x}, Value: 0x{Value:08x}')
 
     def parse_dvrt(self):
         Symbol = self.read_qword()
@@ -147,7 +150,7 @@ class dvrt():
 def main():
     parser = argparse.ArgumentParser(description='parser DVRT in PE file')
     parser.add_argument('driver', type=str, help='driver name')
-    parser.add_argument('--path', type=str, default='./', help='driver path')
+    parser.add_argument('--path', type=str, default='D:\\VMExchangeSwap\\windows-dll-and-sys\\', help='driver path')
     args = parser.parse_args()
 
     obj = dvrt(args.driver, args.path)
